@@ -1,0 +1,19 @@
+# qtask configuration
+# CLI flags override these defaults.
+
+jira:
+  user: "mmomtaz"
+  project: "PDK80"
+  inst_file: "~/bin/installations.json"
+  issue_type: "Task"
+
+query:
+  # Filter by status (e.g. Open, "In Progress", Closed). Leave empty for all.
+  status: "Open, In Progress"
+
+display:
+  # Maximum summary length in the list table
+  max_summary: 60
+
+# Set to true for verbose/debug output
+verbose: false

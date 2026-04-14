@@ -1,0 +1,2 @@
+[DEBUG] User: mmomtaz, Project: PDK80, Status: Open, In Progress, Dry-run: False
+[DEBUG] fetch_issues: /p/foundry/env/proj_tools/pdk_jira_utils/current/bin/getJiraIssues -inst_file ~/bin/installations.json "project=PDK80 AND issuetype=Task AND Assignee=mmomtaz AND status in (Open, 'In Progress')" -fields "Summary, Status, Description" 
