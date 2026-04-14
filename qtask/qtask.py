@@ -1,4 +1,4 @@
-#!/usr/intel/bin/python3.12
+#!/p/foundry/env/ezb/ez/25ww39.1/python/3.11.1/bin/python3
 
 """
 qtask.py - List Jira Tasks
@@ -296,27 +296,22 @@ def print_table(issues, max_summary=60, output_format='table', output_file=None)
                 'summary': safe_field(issue, 'Summary'),
             })
         json_text = json.dumps(out, indent=2)
-        print(json_text)
         dump_path = output_file or 'qtask_output.json'
         with open(dump_path, 'w', encoding='utf-8') as f:
             f.write(json_text + '\n')
-        print(f"\nExported {len(keys_ordered)} issue(s) to {dump_path}")
+        print(f"Exported {len(keys_ordered)} issue(s) to {dump_path}")
         return keys_ordered
 
     # --- CSV output ---
     if output_format == 'csv':
-        buf = io.StringIO()
-        writer = csv.writer(buf)
-        writer.writerow(['Key', 'Status', 'Summary'])
-        for key in keys_ordered:
-            issue = issues[key]
-            writer.writerow([key, safe_field(issue, 'Status'), safe_field(issue, 'Summary')])
-        csv_text = buf.getvalue()
-        print(csv_text, end='')
         dump_path = output_file or 'qtask_output.csv'
         with open(dump_path, 'w', newline='', encoding='utf-8') as f:
-            f.write(csv_text)
-        print(f"\nExported {len(keys_ordered)} issue(s) to {dump_path}")
+            writer = csv.writer(f)
+            writer.writerow(['Key', 'Status', 'Summary'])
+            for key in keys_ordered:
+                issue = issues[key]
+                writer.writerow([key, safe_field(issue, 'Status'), safe_field(issue, 'Summary')])
+        print(f"Exported {len(keys_ordered)} issue(s) to {dump_path}")
         return keys_ordered
 
     # --- Default table output ---
@@ -654,7 +649,8 @@ def cmd_update(args):
 
     # Always bypass cache for update — need fresh data
     issues = fetch_issues(jql, fields, use_cache=False)
-    keys_ordered = print_table(issues, max_summary)
+    print(args)
+    keys_ordered = print_table(issues, max_summary, output_format=args.output)
 
     if not keys_ordered:
         return
@@ -766,6 +762,8 @@ def main():
     _add_common_args(sp_update)
     sp_update.add_argument('--dry-run', action='store_true',
                            help='Show what would be changed without applying')
+    sp_update.add_argument('-o', '--output', choices=['table', 'json', 'csv'], default='table',
+                         help='Output format (default: table)')
     sp_update.set_defaults(func=cmd_update)
 
     # --- detail ---

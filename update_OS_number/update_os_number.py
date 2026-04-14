@@ -1,4 +1,4 @@
-#!/p/foundry/env/ezb/ez/23ww45.3/python/3.9.13/bin/python3
+#!/p/foundry/env/ezb/ez/25ww39.1/python/3.11.1/bin/python3
 """update_os_number.py
 
 Scan files and replace/insert the second line with an OS version comment
