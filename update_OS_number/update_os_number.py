@@ -5,11 +5,8 @@ Scan files and replace/insert the second line with an OS version comment
 extracted from a DR file. Targets files matching a regex pattern.
 
 Examples:
-  # Default: auto-detect os-file, update matching .rs files recursively
+  # Default: auto-detect os-file, update matching git-changed .rs files recursively
   python scripts/update_os_number.py --root .
-
-  # Only update git-changed files
-  python scripts/update_os_number.py --root . --git-only
 
   # Only update git-changed files (dry-run)
   python scripts/update_os_number.py --root . --git-only --dry-run
@@ -221,7 +218,7 @@ def main(argv=None):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 examples:
-  %(prog)s --root .                        Update files from CWD
+    %(prog)s --root .                        Update git-changed files from CWD
   %(prog)s --root . --dry-run              Preview without modifying
   %(prog)s --root . --os-file custom.rs    Use a custom DR file
   %(prog)s --root . --pattern '\\.rs$'     Override file pattern
@@ -258,8 +255,8 @@ examples:
                    help="Show detailed output for each file")
     p.add_argument("--quiet", "-q", action="store_true",
                    help="Only show summary and errors")
-    p.add_argument("--git-only", "-g", action="store_true",
-                   help="Only update files that git reports as changed (modified/added/untracked)")
+    p.add_argument("--git-only", "-g", dest="git_only", action="store_true", default=True,
+                   help="Only update files that git reports as changed (modified/added/untracked) (default)")
     args = p.parse_args(argv)
 
     # Set up logging
