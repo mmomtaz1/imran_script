@@ -644,57 +644,70 @@ def cmd_update(args):
     if debug_mode:
         print(f"[DEBUG] User: {user}, Project: {project}, Status: {status}, Dry-run: {dry_run}")
 
-    jql = build_jql(user, project, status, issue_type)
-    fields = '-fields "Summary, Status, Description" '
+    total_modified = 0
+    total_skipped = 0
+    confirmed = False
 
-    # Always bypass cache for update — need fresh data
-    issues = fetch_issues(jql, fields, use_cache=False)
-    print(args)
-    keys_ordered = print_table(issues, max_summary, output_format=args.output)
+    for pass_idx in range(1, 3):
+        print(f"\n=== Update pass {pass_idx}/2 ===")
 
-    if not keys_ordered:
-        return
+        jql = build_jql(user, project, status, issue_type)
+        fields = '-fields "Summary, Status, Description" '
 
-    issue_count = len(keys_ordered)
-    print(f"\n{issue_count} issue(s) found.")
+        # Always bypass cache for update — need fresh data
+        issues = fetch_issues(jql, fields, use_cache=False)
+        keys_ordered = print_table(issues, max_summary, output_format=args.output)
 
-    # (#1) Require explicit confirmation before bulk-updating
-    if not dry_run:
-        answer = input(f"Proceed to update all {issue_count} issue(s)? [y/N] ").strip().lower()
-        if answer not in ('y', 'yes'):
-            print("Aborted.")
-            return
-
-    modified = 0
-    skipped = 0
-    for idx, issue_key in enumerate(keys_ordered, 1):
-        current_status = safe_field(issues[issue_key], 'Status')
-        progress = f"[{idx}/{issue_count}]"
-
-        # (#3) Fixed: continue instead of break so remaining issues are still processed
-        if current_status in ('Closed', 'Resolved', 'Resolved:Resolution Provided'):
-            print(f"  {progress} {issue_key}: already {current_status} — skipped")
-            skipped += 1
+        if not keys_ordered:
+            print("No issues found for this pass.")
             continue
 
-        if current_status == 'Open':
-            next_status = 'In Progress'
-        elif current_status == 'In Progress':
-            next_status = 'Resolved:Resolution Provided'
-        else:
-            next_status = 'In Progress'
+        issue_count = len(keys_ordered)
+        print(f"\n{issue_count} issue(s) found.")
 
-        print(f"  {progress} {issue_key}: {colorize_status(current_status)} → {colorize_status(next_status)}")
+        # Ask for confirmation once before first real update pass.
+        if not dry_run and not confirmed:
+            answer = input(f"Proceed to update all {issue_count} issue(s)? [y/N] ").strip().lower()
+            if answer not in ('y', 'yes'):
+                print("Aborted.")
+                return
+            confirmed = True
 
-        try:
-            if update_status(issue_key, next_status, dry_run=dry_run):
-                modified += 1
-        except Exception as e:
-            print(f"  {progress} Error updating {issue_key}: {e}")
+        modified = 0
+        skipped = 0
+        for idx, issue_key in enumerate(keys_ordered, 1):
+            current_status = safe_field(issues[issue_key], 'Status')
+            progress = f"[{idx}/{issue_count}]"
 
-    # (#8) Fixed typo
+            # (#3) Fixed: continue instead of break so remaining issues are still processed
+            if current_status in ('Closed', 'Resolved', 'Resolved:Resolution Provided'):
+                print(f"  {progress} {issue_key}: already {current_status} — skipped")
+                skipped += 1
+                continue
+
+            if current_status == 'Open':
+                next_status = 'In Progress'
+            elif current_status == 'In Progress':
+                next_status = 'Resolved:Resolution Provided'
+            else:
+                next_status = 'In Progress'
+
+            print(f"  {progress} {issue_key}: {colorize_status(current_status)} → {colorize_status(next_status)}")
+
+            try:
+                if update_status(issue_key, next_status, dry_run=dry_run):
+                    modified += 1
+            except Exception as e:
+                print(f"  {progress} Error updating {issue_key}: {e}")
+
+        total_modified += modified
+        total_skipped += skipped
+
+        action = "would be updated" if dry_run else "updated"
+        print(f"Pass {pass_idx} complete: {modified} {action}, {skipped} skipped.")
+
     action = "would be updated" if dry_run else "updated"
-    print(f"\nAll updates are done! {modified} {action}, {skipped} skipped.")
+    print(f"\nAll updates are done! {total_modified} {action}, {total_skipped} skipped.")
 
 
 def cmd_detail(args):
