@@ -55,7 +55,7 @@ The tool automatically detects your username from `$USER`, so no login is needed
 |---------|-------------|
 | 🔍 **List tasks** | View your assigned Jira issues in a formatted table |
 | 📊 **Export** | Output as table, CSV, or JSON; save to file with `-f` |
-| 🔄 **Bulk update** | Advance all matching issues to their next workflow status |
+| 🔄 **Bulk update** | Run two passes to advance matching issues through workflow statuses |
 | 📝 **Issue detail** | View full issue descriptions with formatted HTML tables |
 | 🎨 **Color-coded** | Statuses are color-coded: 🔴 Open, 🟡 In Progress, 🔵 On Hold, 🟢 Resolved |
 | ⚡ **Caching** | 60-second local cache to speed up repeated queries |
@@ -81,7 +81,7 @@ qtask list
 # 2. See details of a specific issue
 qtask detail PDK80-12345
 
-# 3. Advance all your open issues to "In Progress"
+# 3. Run update in two passes (Open issues can reach Resolved in one command)
 qtask update --dry-run    # preview first
 qtask update              # apply changes
 ```
@@ -137,7 +137,7 @@ Total: 2 issue(s)
 
 ### `update` — Advance issue statuses
 
-Bulk-update all matching issues to their next workflow status.
+Bulk-update all matching issues in two consecutive passes.
 
 ```bash
 # Preview what would change (safe — no modifications)
@@ -156,7 +156,7 @@ qtask update --status "Open"
 qtask update -f update_log.txt
 ```
 
-**How transitions work:**
+**How transitions work (per pass):**
 
 | Current Status | → Next Status |
 |:---|:---|
@@ -168,6 +168,7 @@ qtask update -f update_log.txt
 **Sample dry-run output:**
 
 ```
+=== Update pass 1/2 ===
 #   Key          Status       Summary
 --  -----------  -----------  --------------------------------------------------------
 1   PDK80-31930  In Progress  ad-1280.3-3.0.5 OS#2 vs OS#5 Via Updates
@@ -180,11 +181,16 @@ Total: 2 issue(s)
   [DRY-RUN] Would update PDK80-31930 → 'Resolved:Resolution Provided' (transition: 'To resolved')
   [2/2] PDK80-31926: Open → In Progress
   [DRY-RUN] Would update PDK80-31926 → 'In Progress' (transition: 'Start Progress')
+Pass 1 complete: 2 would be updated, 0 skipped.
 
-All updates are done! 2 would be updated, 0 skipped.
+=== Update pass 2/2 ===
+...
+Pass 2 complete: ...
+
+All updates are done! <total> would be updated, <total> skipped.
 ```
 
-> **Safety:** Without `--dry-run`, the tool will prompt `Proceed to update all N issue(s)? [y/N]` before making any changes.
+> **Safety:** Without `--dry-run`, the tool prompts once before the first pass: `Proceed to update all N issue(s)? [y/N]`.
 
 ---
 
@@ -371,7 +377,7 @@ qtask list -o json -f tasks.json  # save to specific file
 
 ## Status Transitions
 
-`qtask update` moves issues through the Jira workflow automatically. The full transition map:
+`qtask update` moves issues through the Jira workflow automatically and runs two passes per command. The full transition map:
 
 | Target Status | Jira Transition Name |
 |:---|:---|
@@ -408,7 +414,7 @@ To avoid excessive Jira API calls, `qtask` caches query results locally:
 # Force a fresh fetch (bypasses cache)
 qtask list --no-cache
 
-# The update command always bypasses cache automatically
+# The update command always bypasses cache automatically (for each pass)
 qtask update
 ```
 
@@ -426,7 +432,7 @@ qtask list
 
 # Work through issues, then resolve them
 qtask update --dry-run          # preview
-qtask update                    # apply
+qtask update                    # apply (runs pass 1 + pass 2)
 
 # Check a specific issue's details
 qtask detail PDK80-12345
